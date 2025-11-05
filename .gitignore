@@ -27,3 +27,4 @@ build/
 # profiling reports
 *.prof
 *.dat
+env
