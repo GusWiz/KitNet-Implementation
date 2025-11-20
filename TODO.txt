@@ -1,18 +1,20 @@
-(A) Feature Extraction and Statistics (AfterImage, netStat)
-    - extract features based on HTTP headers - web-based IDS
-    - extract features related to the payload (XML file)
-    - final feature selection with PCA or heatmap?
-    - currently packet flows (streams) between two devices get measured based on srcIP and dstIP  
-        -> in case of sdc data it might be better to measure streams based on Session ID
-(B) Data Generator 
-    - automate generation of different anomalies to evaluate the model (i.e. like ID2T)
-    - add noise to generate more realistic datasets 
-    - data augmentation 
-(C) online packet capturing (Kitsune)
-    - improve parsing speed with cython, numba jit or multiprocessing
-(D) Framework to test it on IoT devices (with Raspberry Pi or Nvidia Jetson Nano)
-    - generate dataset with man-in-the-middle attack (tool to do so: ettercap)
-(E) Evaluation 
-    - visualize clustering to manually optimize the feature map 
-    - Explainable AI to visualize the reason for raising alarms 
-        - e.g. use logged packets that cause an alarm to visualize the attacker on network graph in neo4j browser
+(A) Create the logic for session tracking of anomolous packets.
+    - Any flagged packets should create an object that includes source ip address and count of
+      anomolous packets from that address.
+    - Should ideally dissappear after some amount of time with no activity (flagged packets).
+        - Probably optional.
+(B) Implement IPTables rule creation.
+    - The logic behind this relies on task (A) from above, so (A) will have to be completed first.
+    - We will have to do some testing and decide how many malicious packets should trigger a 
+      firewall rule, as well as how long to block that traffic for.
+        - This will include some kind of timer component in the main program loop where packets
+          get flagged
+(C) Update thresholding logic to probabilistically decide what the threshold rmse score is for a run
+    - Currently it is done by matching the highest rmse value encountered during training
+(D) Package the entire thresholding logic in realtime_stream.py into a function in another file.
+    - This function should process data from the shared packet queue and return a threshold value 
+      to the main thread.
+(E) Implement logging as a way to replace print statements.
+    - The tool to do this should be loguru. It's easy to implement and very helpful for error handling
+(F) Implement a log file where program output is stored.
+    - This should include the runtime messages, the anomolous packets, and any errors that occur
