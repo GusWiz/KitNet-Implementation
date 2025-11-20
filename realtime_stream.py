@@ -1,7 +1,9 @@
 from Litsune import Litsune
 import numpy as np
+import packet_stream as ps
+from queue import Queue
+import threading
 import time
-import pyshark
 
 ##############################################################################
 # Kitsune a lightweight online network intrusion detection system based on an ensemble of autoencoders (kitNET).
@@ -14,8 +16,6 @@ import pyshark
 #The runtimes presented in the paper, are based on the C++ implimentation (roughly 100x faster than the python implimentation)
 ###################  Last Tested with Anaconda 3.6.3   #######################
 
-packet_limit = np.inf #the number of packets to process
-
 # KitNET params:
 maxAE = 10 #maximum size for any autoencoder in the ensemble layer
 FMgrace = 5000 #the number of instances taken to learn the feature mapping (the ensemble's architecture)
@@ -24,16 +24,21 @@ ADgrace = 50000 #the number of instances used to train the anomaly detector (ens
 # Build Litsune
 L = Litsune(max_autoencoder_size=maxAE,FM_grace_period=FMgrace,AD_grace_period=ADgrace)
 
+capture_interface = input("Please input the interface to monitor traffic from: ")
 
-capture = pyshark.LiveCapture(interface='enp0s1')
-print("Running Litsune:")
+# Set up capture and begin listener thread
+packet_queue = Queue(maxsize=1000)
+listener = threading.Thread(target=ps.RunPacketStream, args=(capture_interface, packet_queue))
+listener.start()
+
 RMSEs = []
 i = 0
 start = time.time()
 
 # Here we process (train/execute) each individual packet.
 # In this way, each observation is discarded after performing process() method.
-for packet in capture.sniff_continuously():
+while True:
+    packet = packet_queue.get()
     i+=1
     if i % 1000 == 0:
         print(i)
